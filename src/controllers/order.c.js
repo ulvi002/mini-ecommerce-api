@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
             product: item.product._id,
             quantity: item.quantity,
         })),
-        totalPrice,
+            totalPrice,
         })    
 
         cart.items = []
@@ -114,7 +114,7 @@ const updateOrderStatus = async (req, res) => {
 const getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find()
-        .populate("user", "name ema~il")
+        .populate("user", "name email")
         .populate("items.product")
 
         res.status(200).json({

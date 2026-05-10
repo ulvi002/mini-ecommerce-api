@@ -1,47 +1,43 @@
-const express = require("express")
-const mongoose = require("mongoose")
-require("dotenv").config()
+const mongoose = require("mongoose");
+require("dotenv").config();
 
-const app = express()
+const app = require("./app");
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }));
-
-app.use("/uploads", express.static("uploads"))
-
-const authRoutes = require("./src/routes/auth.r")
-app.use("/api/auth", authRoutes)
-
-const productRoutes = require("./src/routes/product.r")
-app.use("/api/products", productRoutes)
-
-const userRoutes = require("./src/routes/user.r")
-app.use("/api/users", userRoutes)
-
-const cartRoutes = require("./src/routes/cart.r")
-app.use("/api/carts", cartRoutes)
-
-const orderRoutes = require("./src/routes/order.r")
-app.use("/api/orders", orderRoutes)
-
-const categoryRoutes = require("./src/routes/category.r")
-app.use("/api/categories", categoryRoutes);
-
-app.get("/", (req,res) => {
-    res.send("Hello guys");
-})
-
+const http = require("http")
+const { Server } = require("socket.io")
 
 const PORT = process.env.PORT || 3000;
+const MONGO_URL = process.env.MONGO_URL;
 
-mongoose.connect(process.env.MONGO_URL)
-.then(() => {
+const server = http.createServer(app)
+
+const io = new Server(server)
+
+io.on("connection", (socket) => {
+  console.log("User connected", socket.id)
+
+  socket.on("message", (msg) => {
+    console.log("Message", msg)
+
+    io.emit("message", msg)
+  })
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected", socket.id)
+  })
+
+  
+})
+
+mongoose.connect(MONGO_URL)
+.then( () => {
     console.log("MongoDB connected")
 
-    app.listen(PORT, () => {
-        console.log(`server running on port ${PORT}`)
+    server.listen(PORT, () => {
+        console.log(` Server running on port ${PORT} `);
     })
 })
-.catch(err => console.log(err))
-
+  .catch((err) => {
+    console.error(" MongoDB connection errror", err)
+  })
 

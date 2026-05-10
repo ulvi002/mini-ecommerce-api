@@ -1,5 +1,7 @@
 const Product = require("../models/product.m")
 const Category = require("../models/category.m")
+const { getProductsService } = require("../services/product.service")
+const { client } = require("../config/redis")
 
 
 const createProduct = async (req, res) => {
@@ -21,6 +23,9 @@ const createProduct = async (req, res) => {
             
             
         })
+
+        const keys = await client.keys("products_*")
+        if(keys.length > 0) await client.del(keys)
         
         res.status(201).json({
             success: true,
@@ -35,45 +40,7 @@ const createProduct = async (req, res) => {
 
 const getProducts = async (req, res) => {
     try {
-        const filter = {}
-
-        if(req.query.category){
-            filter.category = req.query.category;
-        }
-
-        if(req.query.search) {
-            filter.name = { $regex: req.query.search, $options: "i"}
-        }
-
-        const page = Number(req.query.page) || 1
-        const limit = Number(req.query.limit) || 10
-
-        const skip = (page - 1) * limit
-
-        if(req.query.minPrice || req.query.maxPrice) {
-            filter.price = {}
-
-            if(req.query.minPrice){
-                filter.price.$gte = Number(req.query.minPrice)
-            }
-
-            if(req.query.maxPrice){
-                filter.price.$lte = Number(req.query.maxPrice)
-            }
-        }
-
-
-        let sort = {}
-
-        if(req.query.sort){
-            sort[req.query.sort] = 1
-        }
-
-        const products = await Product.find(filter)
-        .populate("category")
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
+        const products = await getProductsService(req.query)
         
         res.status(200).json({ products })
     } catch (error) {
@@ -98,10 +65,15 @@ const updateProduct = async (req, res) => {
         const product = await Product.findByIdAndUpdate(
             req.params.id, req.body, { new:true }
         ).populate("category");
-            
+        
+        
         if(!product) return res.status(404).json({ message: "Product not found" });
+
+        const keys = await client.keys("products_*")
+        if(keys.length > 0) await client.del(keys)
+
         res.json({ message: "Product updated", product });    
- 
+        
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
@@ -111,8 +83,13 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
+        
         if(!product) return res.status(404).json({ message: "Product not found" });
         res.json({ message: "Product deleted" });
+        
+        const keys = await client.keys("products_*");
+        if (keys.length > 0) await client.del(keys);  
+        
     } catch (error) {
         res.status(500).json({ error: error.message })
         

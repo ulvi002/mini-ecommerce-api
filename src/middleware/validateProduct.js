@@ -28,7 +28,7 @@ const validateProduct = async (req, res, next) => {
 
         const  categoryExists = await Category.findById(category)
         if(!categoryExists){
-            return res.status(400).json({ message: "Invaldi category ID" })
+            return res.status(400).json({ message: "Invalid category ID" })
         } 
 
         req.body.price = priceNumber

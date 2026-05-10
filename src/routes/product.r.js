@@ -24,9 +24,9 @@ router.get("/:id", getProduct);
 
 router.post("/",
     upload.single("image"),
-     protect,
-       validateProduct,
-        createProduct);
+    protect,
+    validateProduct,
+    createProduct);
 
 router.put("/:id", protect, authorize("admin"), validateProductUpdate, updateProduct);
 
